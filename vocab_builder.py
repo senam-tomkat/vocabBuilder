@@ -18,15 +18,12 @@ def pairwise(iterable):
 
 
 if __name__ == "__main__":
-
     input_file_path = sys.argv[1]
     output_file = sys.argv[2]
 
-    print(input_file_path)
-    print(output_file)
-
     magoosh_word_list = pd.read_csv("magoosh_word_list.csv")
-    manhat_word_list = pd.read_csv("manhattan_word_list.csv", sep="\t")
+    manhat_word_list = pd.read_csv("manhattan_word_list.csv")
+
     word_list = magoosh_word_list.merge(manhat_word_list, how='outer', on=['word'], suffixes=('', '_manhat'))
     word_list["definition"] = word_list["definition"].where(word_list["definition"].notnull(),
                                                             word_list["definition_manhat"])
@@ -34,27 +31,9 @@ if __name__ == "__main__":
     word_list = word_list[["word", "definition"]]
 
     sb_stemmer = SnowballStemmer("english")
-    lemmatizer = WordNetLemmatizer()
-    print(lemmatizer.lemmatize("exasperation"))
 
     with open(input_file_path, 'r') as doc:
         text = doc.read()
-        # doc_words_list = word_tokenize(text)
-        # stopword_set = set(stopwords.words('english'))
-        # # word_list_clean = list(filter(lambda x: x not in stopword_set, doc_words_list))
-        # word_set_clean = set(filter(lambda x: x not in stopword_set, doc_words_list))
-        # word_set_union = word_set_clean.union(map(sb_stemmer.stem, word_set_clean))
-        # word_set_union = word_set_union.union(map(sb_stemmer.stem, word_set_clean))
-        #
-        # for word in sorted(word_set_union):
-        #     print(word)
-        #
-        # # fdist = FreqDist(word.lower() for word in word_list_clean)
-        # # print(fdist)
-        # # word_list = [word for word, freq in fdist.items() if freq == 1]
-        # # print(word_list)
-        # exit()
-
         sent_list = sent_tokenize(text)
         common_word_df_list = []
         for sent_0, sent_1 in pairwise(sent_list):
@@ -87,6 +66,9 @@ if __name__ == "__main__":
             .context {
                 font-size: 13px;
             }
+            .word-div {
+                margin: 10px 0;
+            }
         </style>
         """
         base_html = """
@@ -99,14 +81,15 @@ if __name__ == "__main__":
         body = ""
         for index, row in df_common_word_final.iterrows():
             pat = r"({}.*?)([, ;:!\.])"
-            sentence = re.sub(pat.format(row["word"]), r"<i>\1</i>\2".format(row["word"]), row["sentence"])
+            sentence = re.sub(pat.format(row["word"]), r"<b><i>\1</i></b>\2".format(row["word"]), row["sentence"])
             body += """
-            <span class="word"><b>{word}</b></span>
-            <br>
-            <span class="def"><i>def: </i>{definition}</b></span>
-            <br>
-            <span class="context">Usage: {sentence}</span>
-            <br><br>
+            <div class="word-div">
+                <span class="word"><b>{word}</b></span>
+                <br>
+                <span class="def"><i>def: </i>{definition}</b></span>
+                <br>
+                <span class="context">Usage: {sentence}</span>
+            </div>
             """.format(word=row["word"], definition=row["definition"], sentence=sentence)
 
         html_str = base_html.format(style=css_style, body=body)
