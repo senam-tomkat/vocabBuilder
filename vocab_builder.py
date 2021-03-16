@@ -17,6 +17,52 @@ def pairwise(iterable):
     return zip(a, b)
 
 
+
+def get_base_html():
+    return """
+        <html>
+            <head>
+                {style}
+            </head>
+            <body>{body}</body>
+        </html>"""
+
+
+def get_css_style():
+    return """
+        <style>
+            .word {
+            }
+            .def {
+                font-size: 14px;
+                font-weight: bold;
+            }
+            .context {
+                font-size: 13px;
+            }
+            .word-div {
+                margin: 10px 0;
+            }
+        </style>
+        """
+
+def generate_html_body(df_common_word_final):
+    body = ""
+    for index, row in df_common_word_final.iterrows():
+            pat = r"({}.*?)([, ;:!\.])"
+            sentence = re.sub(pat.format(row["word"]), r"<b><i>\1</i></b>\2".format(row["word"]), row["sentence"])
+            body += """
+            <div class="word-div">
+                <span class="word"><b>{word}</b></span>
+                <br>
+                <span class="def"><i>def: </i>{definition}</b></span>
+                <br>
+                <span class="context">Usage: {sentence}</span>
+            </div>
+            """.format(word=row["word"], definition=row["definition"], sentence=sentence)
+    return body
+
+
 if __name__ == "__main__":
     input_file_path = sys.argv[1]
     output_file = sys.argv[2]
@@ -55,44 +101,11 @@ if __name__ == "__main__":
         df_common_word_final = df_common_word_final.drop_duplicates(subset=["word"], keep='first')
         df_common_word_final = df_common_word_final[["word", "definition", "sentence"]]
 
-        css_style = """
-        <style>
-            .word {
-            }
-            .def {
-                font-size: 14px;
-                font-weight: bold;
-            }
-            .context {
-                font-size: 13px;
-            }
-            .word-div {
-                margin: 10px 0;
-            }
-        </style>
-        """
-        base_html = """
-        <html>
-            <head>
-                {style}
-            </head>
-            <body>{body}</body>
-        </html>"""
-        body = ""
-        for index, row in df_common_word_final.iterrows():
-            pat = r"({}.*?)([, ;:!\.])"
-            sentence = re.sub(pat.format(row["word"]), r"<b><i>\1</i></b>\2".format(row["word"]), row["sentence"])
-            body += """
-            <div class="word-div">
-                <span class="word"><b>{word}</b></span>
-                <br>
-                <span class="def"><i>def: </i>{definition}</b></span>
-                <br>
-                <span class="context">Usage: {sentence}</span>
-            </div>
-            """.format(word=row["word"], definition=row["definition"], sentence=sentence)
-
+        css_style = get_css_style()
+        base_html = get_base_html()
+        body = generate_html_body(df_common_word_final) 
         html_str = base_html.format(style=css_style, body=body)
 
         with open(output_file, "w") as f:
             f.write(html_str)
+
